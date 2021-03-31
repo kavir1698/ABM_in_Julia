@@ -1,2 +1,2 @@
-# ABM_in_Julia
+# ABM in Julia
 Accompanying code to the book chapter
