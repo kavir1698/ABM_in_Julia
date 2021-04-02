@@ -1,10 +1,9 @@
 module ABMinJulia
 
 using Agents
-using Plots
 using Random
-using OpenStreetMapXPlot
 
 # include("simpleABM.jl")
+include("epidemic_model.jl")
 
 end # module
