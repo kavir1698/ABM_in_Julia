@@ -1,91 +1,102 @@
+using Pkg
+Pkg.activate(".")
+using Random
 using ABMinJulia
 using Agents
-using Plots
-using OpenStreetMapXPlot
+using CairoMakie
+using OSMMakie
 
 "Define agent color"
-function ac(agent)
-    if agent.status == :I
-        return :red
-    elseif agent.status == :S
-        return :blue
-    elseif agent.status == :D
-        return :black
-    else
-        return :green
-    end
+function agent_color(agent)
+  if agent.status == :I
+    return :red
+  elseif agent.status == :S
+    return :blue
+  elseif agent.status == :D
+    return :black
+  elseif agent.status == :R
+    return :green
+  end
 end
 
 "Define agent shape"
-function am(agent)
-    if agent.status == :I
-        return :utriangle
-    elseif agent.status == :S
-        return :circle
-    else
-        return :rect
-    end
+function agent_marker(agent)
+  if agent.status == :I
+    return :utriangle
+  elseif agent.status == :S
+    return :circle
+  else
+    return :rect
+  end
 end
 
-"Scatter plot the agents"
-function plotagents(model)
-    ids = model.scheduler(model)
-    colors = [ac(model[i]) for i in ids]
-    markers = [am(model[i]) for i in ids]
-    pos = [osm_map_coordinates(model[i], model) for i in ids]
+model = ABMinJulia.initialize(β=0.9, initial_infected=20,
+  detected_movement=0.05, detection_time=5, N=200,
+  infection_period=15, speed=0.4, movement_prob=0.05,
+  n_public_places=15, n_fav_places=4, transmission_radius=1, seed=9977)
 
-    scatter!(
-        pos;
-        markercolor = colors,
-        markershapes = markers,
-        label = "",
-        markerstrokewidth = 0.5,
-        markerstrokecolor = :black,
-        markeralpha = 0.7
-    )
-end
+# Create a video of the simulation
+abmvideo("plots/Epidemy.mp4", model;
+  agent_color=agent_color, 
+  agent_marker=agent_marker, agent_size=10,
+  showstep=true, framerate=10, dt=1
+)
 
-model = ABMinJulia.initialize(speed = 50, β = 0.1, initial_infected = 80)
+# Redefine the model
+model = ABMinJulia.initialize(β = 0.9, initial_infected = 20,
+detected_movement = 0.05, detection_time = 5, N = 200,
+infection_period=15, speed=0.4, movement_prob=0.05,
+n_public_places=15, n_fav_places=4, transmission_radius=1, seed=9977)
 
-frames = @animate for i = 1:300
-    plotmap(model.space.m)
-    plotagents(model)
-    step!(model, sir_step!, 1)
-end
-
-gif(frames, "plots/epidemy.gif", fps = 10)
-
+# Define the functions to count the number of agents in each state
 nS(model) = count(a -> a.status == :S, allagents(model))
 nI(model) = count(a -> a.status == :I, allagents(model))
 nR(model) = count(a -> a.status == :R, allagents(model))
 nD(model) = count(a -> a.status == :D, allagents(model))
 
-model = ABMinJulia.initialize(β = 0.9, initial_infected = 20,
-    detected_movement = 0.05, detection_time = 5, N = 200,
-    infection_period = 15, movement_per_day = 5, speed = 400,
-    n_public_places = 15)
+# Run the simulation and collect the data
+nsteps = 1000
+_, mdata = run!(model, nsteps, mdata = [nS, nI, nR, nD])
 
-nsteps = 500
-_, mdata = run!(model, sir_step!, nsteps, mdata = [nS, nI, nR, nD])
+# Plot the data
+fig = Figure();
+ax = Axis(fig[1, 1], xlabel="Step", ylabel="Count")
 
-plot(0:nsteps, mdata.nS, label = "S", c = :blue, xlabel = "Step", ylabel = "Count")
-plot!(0:nsteps, mdata.nI, label = "I", c = :red)
-plot!(0:nsteps, mdata.nR, label = "R", c = :green)
-plot!(0:nsteps, mdata.nD, label = "D", c = :orange)
+lines!(ax, 0:nsteps, mdata.nS, color=:blue, label="S")
+lines!(ax, 0:nsteps, mdata.nI, color=:red, label="I")
+lines!(ax, 0:nsteps, mdata.nR, color=:green, label="R")
+lines!(ax, 0:nsteps, mdata.nD, color=:orange, label="D")
 
-savefig("plots/sir_without_replicates.png")
+# Add a legend
+leg = Legend(fig[1, 2], ax, "SIR Model")
+fig[1, 1] = ax
 
-model = ABMinJulia.initialize(β = 0.9, initial_infected = 20,
-    detected_movement = 0.05, detection_time = 5, N = 200,
-    infection_period = 15, movement_per_day = 5, speed = 400,
-    n_public_places = 5)
+# Save the figure
+CairoMakie.save("plots/sir_without_replicates.png", fig)
 
-nsteps = 500
-_, mdata = run!(model, sir_step!, nsteps, mdata = [nS, nI, nR, nD])
+####
+# Run the same simulation but with 7 public places
+####
 
-plot(0:nsteps, mdata.nS, label = "S", c = :blue, xlabel = "Step", ylabel = "Count")
-plot!(0:nsteps, mdata.nI, label = "I", c = :red)
-plot!(0:nsteps, mdata.nR, label = "R", c = :green)
-plot!(0:nsteps, mdata.nD, label = "D", c = :orange)
+model = ABMinJulia.initialize(β=0.9, initial_infected=20,
+  detected_movement=0.05, detection_time=5, N=200,
+  infection_period=15, speed=0.4, movement_prob=0.05,
+  n_public_places=15, n_fav_places=7, transmission_radius=1, seed=4710)
 
-savefig("plots/sir_without_replicates_5public.png")
+nsteps = 1000
+_, mdata = run!(model, nsteps, mdata = [nS, nI, nR, nD])
+
+fig = Figure();
+ax = Axis(fig[1, 1], xlabel="Step", ylabel="Count")
+
+lines!(ax, 0:nsteps, mdata.nS, color=:blue, label="S")
+lines!(ax, 0:nsteps, mdata.nI, color=:red, label="I")
+lines!(ax, 0:nsteps, mdata.nR, color=:green, label="R")
+lines!(ax, 0:nsteps, mdata.nD, color=:orange, label="D")
+
+# Add a legend
+leg = Legend(fig[1, 2], ax, "SIR Model")
+fig[1, 1] = ax
+
+# Save the figure
+CairoMakie.save("plots/sir_without_replicates_7public.png", fig)
