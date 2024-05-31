@@ -42,17 +42,17 @@ abmvideo("plots/Epidemy.mp4", model;
   showstep=true, framerate=10, dt=1
 )
 
-# Redefine the model
-model = ABMinJulia.initialize(β = 0.9, initial_infected = 20,
-detected_movement = 0.05, detection_time = 5, N = 200,
-infection_period=15, speed=0.4, movement_prob=0.05,
-n_public_places=15, n_fav_places=4, transmission_radius=1, seed=9977)
-
 # Define the functions to count the number of agents in each state
 nS(model) = count(a -> a.status == :S, allagents(model))
 nI(model) = count(a -> a.status == :I, allagents(model))
 nR(model) = count(a -> a.status == :R, allagents(model))
 nD(model) = count(a -> a.status == :D, allagents(model))
+
+# Redefine the model
+model = ABMinJulia.initialize(β = 0.9, initial_infected = 20,
+detected_movement = 0.05, detection_time = 5, N = 200,
+infection_period=15, speed=0.4, movement_prob=0.05,
+n_public_places=15, n_fav_places=4, transmission_radius=1, seed=9978)
 
 # Run the simulation and collect the data
 nsteps = 1000
@@ -72,7 +72,7 @@ leg = Legend(fig[1, 2], ax, "SIR Model")
 fig[1, 1] = ax
 
 # Save the figure
-CairoMakie.save("plots/sir_without_replicates.png", fig)
+CairoMakie.save("plots/sir_15.png", fig)
 
 ####
 # Run the same simulation but with 7 public places
@@ -81,7 +81,7 @@ CairoMakie.save("plots/sir_without_replicates.png", fig)
 model = ABMinJulia.initialize(β=0.9, initial_infected=20,
   detected_movement=0.05, detection_time=5, N=200,
   infection_period=15, speed=0.4, movement_prob=0.05,
-  n_public_places=15, n_fav_places=7, transmission_radius=1, seed=4710)
+  n_public_places=5, n_fav_places=4, transmission_radius=1, seed=9978)
 
 nsteps = 1000
 _, mdata = run!(model, nsteps, mdata = [nS, nI, nR, nD])
@@ -99,4 +99,4 @@ leg = Legend(fig[1, 2], ax, "SIR Model")
 fig[1, 1] = ax
 
 # Save the figure
-CairoMakie.save("plots/sir_without_replicates_7public.png", fig)
+CairoMakie.save("plots/sir_5.png", fig)

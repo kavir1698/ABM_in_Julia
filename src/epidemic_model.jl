@@ -69,8 +69,7 @@ function sir_move!(agent, model)
   
   if !is_stationary(agent, model)
     move_along_route!(agent, model, model.speed)
-  end
-  if is_stationary(agent, model) && rand(abmrng(model)) <= model.movement_prob
+  elseif is_stationary(agent, model) && rand(abmrng(model)) <= model.movement_prob
     # make sure the agent does choose the same place
     fav_places_copy = deepcopy(agent.fav_places)
     deleteat!(fav_places_copy, findfirst(x -> model.public[x] == agent.destination, fav_places_copy))
